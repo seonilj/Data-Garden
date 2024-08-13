@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "re": "^0.1.4",
+    "selenium": "^2.20.0",
+    "unicodedata": "^0.1.1"
+  }
+}
