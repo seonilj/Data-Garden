@@ -1,5 +1,3 @@
-# 14/08/2024 issue: 'place' brings content
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
@@ -34,7 +32,7 @@ def insta_search(word):
 
 # open the search result
 ##########
-word = 'klfoodie'
+word = 'KEYWORD'
 ##########
 url = insta_search(word)
 driver.get(url)
@@ -58,35 +56,27 @@ def get_content(driver):
     html = driver.page_source
     soup = BeautifulSoup(html, 'html.parser')
     
+    # date
+    date = soup.select('time')[0]['datetime'][:10]
+    
     # content
     try:
         content = soup.select('div._a9zs > h1')[0].text  
         content = unicodedata.normalize('NFC', content) 
     except:
-        content = ' '
+        content = ''
     
     # tag
     tag = re.findall(r'#[^\s#,\\]+', content)
     
-    # date
-    date = soup.select('time')[0]['datetime'][:10]
-##########
-    # place
-##########
-    try: 
-        place = soup.find_all(href=re.compile("/explore/locations/"))
-        #place = unicodedata.normalize('NFC', place)
-    except:
-        place = ''
-    
     # save the collected html information from above codes
-    data = [content, tag, date, place]
+    data = [date, tag, content]
     return(data)
 
 get_content(driver)
 
 
-# move to the next: 'target = n|target(no. of contents for crawling)'
+# move to the next: 'target = n|target (how many contents for crawling)'
 def move_next(driver):
     right = driver.find_element(By.CSS_SELECTOR, "div._aaqg._aaqh > button")
     right.click()
@@ -122,8 +112,8 @@ for i in range(target):
 
 # save the data
 result_df = pd.DataFrame(result)
-result_df.columns = ['content', 'tag', 'date', 'place']
+result_df.columns = ['date', 'tag', 'content']
 ########## the name of the data
-result_df.to_excel(excel_writer='./Crawling_InstaContent_test/140824crawling.xlsx',
+result_df.to_excel(excel_writer='./RESULT.xlsx',
                    index = False) # to remove auto row numbers
 ##########

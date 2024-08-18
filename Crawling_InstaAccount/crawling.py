@@ -1,5 +1,3 @@
-# 14/08/2024 issue: 'place' brings content
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
@@ -25,28 +23,28 @@ time.sleep(20)
 
 # URL: generating url to open the search result
 ##########
-def insta_search(word):
-    url = 'https://www.instagram.com/explore/tags/{}/'.format(word)
-        # OR url = 'https//www.instagram.com/explore/tags/' + word #
+def insta_search(account):
+    url = 'https://www.instagram.com/{}/'.format(account)
+        # OR url = 'https//www.instagram.com/' + account #
     return(url)
 ##########
 
 
 # open the search result
 ##########
-word = 'klfoodie'
+account = 'kl.foodie'
 ##########
-url = insta_search(word)
+url = insta_search(account)
 driver.get(url)
-time.sleep(8)
+time.sleep(5)
     # to avoid the potential error of taking 'page_source' before loading the page
 
 
 # pick the first post of the page screen
 def select_first(driver):
-    first = driver.find_element(By.CSS_SELECTOR, 'div._aagu')
+    first = driver.find_element(By.CSS_SELECTOR, 'div._aagw')
     first.click()
-    time.sleep(5)
+    time.sleep(3)
     
 select_first(driver)
 
@@ -61,51 +59,56 @@ def get_content(driver):
     # content
     try:
         content = soup.select('div._a9zs > h1')[0].text  
-        content = unicodedata.normalize('NFC', content) 
+        content = unicodedata.normalize('NFC', content)
+        # the account content with events always has below emoji! 
+        if '🗓️' not in content:
+            content = ''
     except:
-        content = ' '
+        content = ''
     
     # tag
-    tag = re.findall(r'#[^\s#,\\]+', content)
+    try:
+        tag = re.findall(r'#[^\s#,\\]+', content)
+        if '🗓️' not in content:
+            tag = ''
+    except:
+        content = ''
     
     # date
-    date = soup.select('time')[0]['datetime'][:10]
-##########
-    # place
-##########
-    try: 
-        place = soup.select('div._aaql')[0].text
-        place = unicodedata.normalize('NFC', content)
+    try:
+        date = soup.select('time')[0]['datetime'][:10]
+        if '🗓️' not in content:
+            date = ''
     except:
-        place = ''
+        content = ''
     
     # save the collected html information from above codes
-    data = [content, tag, date, place]
+    data = [date, tag, content]
     return(data)
 
 get_content(driver)
 
 
-# move to the next: 'target = n|target(no. of contents for crawling)'
+# move to the next: 'target = n|target (how many contents for crawling)'
 def move_next(driver):
-    right = driver.find_element(By.CSS_SELECTOR, "div._aaqg._aaqh > button")
+    right = driver.find_element(By.CSS_SELECTOR, "div._aaqg > button")
     right.click()
-    time.sleep(5)
+    time.sleep(3)
 move_next(driver)
 
 
 # def of crawling process -- extract the data!
-url = insta_search(word)
+url = insta_search(account)
 driver.get(url)
 time.sleep(5)
-    
-    # select first picture
+
+# select first picture
 select_first(driver)
 time.sleep(3)
 
 result = []
 ##########
-target = 5
+target = 25
 ##########
 
 for i in range(target):
@@ -115,35 +118,18 @@ for i in range(target):
         result.append(data)
         move_next(driver)
     except:
-        time.sleep(5)
+        time.sleep(3)
         move_next(driver)
         time.sleep(3)
 
 
 # save the data
 result_df = pd.DataFrame(result)
-result_df.columns = ['content', 'tag', 'date', 'place']
+result_df.columns = ['date', 'tag', 'content']
+result_df = result_df[(result_df != '') & (result_df != ' ')].dropna(how='all').reset_index(drop=True)
 ########## the name of the data
-result_df.to_excel(excel_writer='140824crawling.xlsx')
+result_df.to_excel(excel_writer='./Crawling_InstaAccount/RESULT.xlsx',
+                   index = False) # to remove auto row numbers
 ##########
-
-########## integrating data ##########
-klfoodie_insta_df = pd.DataFrame( [ ] )
-##########
-
-folder = './file/' # not set yet
-f_list = ['A.xlsx', 'B.xlsx', 'C.xlsx', 'D.xlsx']
-
-for frame in f_list:
-    fpath = folder + frame
-    temp = pd.read_excel(fpath)
-    klfoodie_insta_df = klfoodie_insta_df.append(temp)
-
-klfoodie_insta_df.coluns = ['content', 'tag', 'date', 'place']
-
-
-# removing repeated data
-klfoodie_insta_df.drop_duplicates(subset = [ "content"] , inplace = True)
-klfoodie_insta_df.to_excel('./file/1_crawling_raw.xlsx', index = False)
 
 
